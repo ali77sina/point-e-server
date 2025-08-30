@@ -151,6 +151,46 @@ This project includes authentication and rate limiting features:
 
 Never commit your actual `config.sh` or secret keys to the repository!
 
+## Server-to-Server Authentication
+
+When calling the Point-E API from your main server, include these headers:
+
+### Required Headers
+```
+Authorization: Bearer YOUR_SECRET_KEY
+Content-Type: application/json
+X-Forwarded-For: actual-user-ip  # Important for rate limiting
+```
+
+### Example Integration
+
+```python
+import requests
+
+POINT_E_URL = "http://YOUR_LOAD_BALANCER_IP"
+SECRET_KEY = "your-secret-key-from-config"
+
+def generate_3d_from_main_server(prompt, user_ip, user_id):
+    headers = {
+        "Authorization": f"Bearer {SECRET_KEY}",
+        "Content-Type": "application/json",
+        "X-Forwarded-For": user_ip  # Pass the real user's IP
+    }
+    
+    response = requests.post(
+        f"{POINT_E_URL}/generate/text",
+        headers=headers,
+        json={"prompt": prompt, "user_id": user_id}
+    )
+    
+    return response.json()
+```
+
+### Important Notes
+- **X-Forwarded-For**: Must contain the actual end-user's IP address for proper rate limiting
+- **Rate Limiting**: Default is 3 requests per IP per day (configurable)
+- **User ID**: Include to organize generated files by user in GCS
+
 ## Configuration
 
 ### Setting up for your project
@@ -163,7 +203,8 @@ Never commit your actual `config.sh` or secret keys to the repository!
 2. Edit `config.sh` with your Google Cloud project details:
    ```bash
    export GCP_PROJECT_ID="your-project-id"
-   export DEPLOYMENT_AUTHOR="your-name"
+   export POINT_E_SECRET_KEY="generate-a-secure-key"
+   export RATE_LIMIT_PER_IP="3"
    ```
 
 3. Source the configuration before running scripts:
