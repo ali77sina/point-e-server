@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Model cache
+point_e_model_cache/
+*.ckpt
+*.pth
+*.pt
+*.bin
+
+# Generated files
+generated_meshes/
+generated_models/
+*.ply
+*.obj
+*.stl
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.useful_commands
+config.sh
+# Don't commit actual secrets
+*_SECRET_KEY*
+*secret*
+*.key
+
+# Docker
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+tmp/
+temp/
+
+# Test outputs
+test_outputs/
+coverage/
+.coverage
+htmlcov/
+
+# GCP
+.gcloudignore
+service-account-key.json
+*.json.key
+
+# Kubernetes
+kubeconfig
+*.kubeconfig

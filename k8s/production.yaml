@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: point-e-production
+  labels:
+    app: point-e-production
+
+    version: production
+spec:
+  replicas: 2  # Start with 2 for HA
+  selector:
+    matchLabels:
+      app: point-e-production
+  template:
+    metadata:
+      labels:
+        app: point-e-production
+    
+    spec:
+      containers:
+      - name: point-e-server
+        image: gcr.io/PROJECT_ID/point-e-server:production
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "6Gi"  # More memory for pre-cached models
+            cpu: "2"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "12Gi"
+            cpu: "6"
+            nvidia.com/gpu: 1
+        env:
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        # FAST health checks - models pre-loaded
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15  # Much faster startup
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 10   # Ready in seconds, not minutes
+          periodSeconds: 5
+          timeoutSeconds: 3
+        startupProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          timeoutSeconds: 3
+          failureThreshold: 30
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-l4
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: point-e-production-service
+  labels:
+
+spec:
+  selector:
+    app: point-e-production
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: LoadBalancer
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: point-e-production-hpa
+  labels:
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: point-e-production
+  minReplicas: 1    # Can scale to 0 if needed
+  maxReplicas: 10   # Higher max for production traffic
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60  # Scale earlier
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60   # Scale up faster
+      policies:
+      - type: Percent
+        value: 200  # Double pods quickly
+        periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 180  # Scale down slower
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+
+---
+# Pod Disruption Budget for HA
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: point-e-production-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: point-e-production
+
+

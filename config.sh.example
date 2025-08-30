@@ -1,0 +1,25 @@
+#!/bin/bash
+# Configuration file for Point-E deployment
+# Copy this to config.sh and update with your values
+
+# Google Cloud Project ID (required)
+export GCP_PROJECT_ID="your-project-id"
+
+# Deployment settings
+export ZONE="us-central1-a"
+export REGION="us-central1"
+export MACHINE_TYPE="g2-standard-8"  # GPU instance type
+
+# Instance group settings (for auto-scaling)
+export INSTANCE_GROUP="point-e-autoscale"
+export MIN_REPLICAS=1
+export MAX_REPLICAS=5
+export TARGET_CPU_UTILIZATION=60
+
+# Google Cloud Storage settings
+# This bucket will store generated 3D models
+export GCS_BUCKET="your-bucket-name"
+export ENABLE_GCS="true"
+
+# Load balancer IP (will be set after deployment)
+export LOAD_BALANCER_IP=""
